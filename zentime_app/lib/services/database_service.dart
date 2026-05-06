@@ -28,7 +28,8 @@ class DatabaseService {
       await userBox.put('profile', UserAccountData(
         id: 'user_123',
         name: '디톡스 장인',
-        email: 'test@zentime.com'
+        email: 'test@zentime.com',
+        themeModeIndex: 2,
       ));
     }
 

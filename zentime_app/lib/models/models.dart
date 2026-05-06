@@ -1,21 +1,21 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 part 'models.g.dart';
 
 @HiveType(typeId: 0)
 class UserAccountData {
-  @HiveField(0)
-  final String id;
+  @HiveField(0) final String id;
   
-  @HiveField(1)
-  final String name;
+  @HiveField(1) final String name;
   
-  @HiveField(2)
-  final String email;
+  @HiveField(2) final String email;
+  @HiveField(3) final int themeModeIndex;
 
   UserAccountData({
     required this.id,
     required this.name,
-    required this.email
+    required this.email,
+    this.themeModeIndex = 1,
   });
 
   factory UserAccountData.fromJson(Map<String, dynamic> json) {
@@ -23,7 +23,16 @@ class UserAccountData {
       id: json['id'],
       name: json['name'],
       email: json['email'],
+      themeModeIndex: json['themeModeIndex'] ?? 1,
     );
+  }
+
+  ThemeMode get themeMode {
+    // index 범위를 벗어나는 예외 상황을 방지하기 위한 안전장치 포함
+    if (themeModeIndex < 0 || themeModeIndex >= ThemeMode.values.length) {
+      return ThemeMode.system; 
+    }
+    return ThemeMode.values[themeModeIndex];
   }
 }
 

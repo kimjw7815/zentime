@@ -20,7 +20,7 @@ class _FramePageState extends State<FramePage> {
       const HomePage(),    // 0번: 홈 페이지
       const DetailPage(),    // 1번: 상세 페이지
       const RankingPage(),    // 0번: 랭킹 페이지
-      const SettingPage(),    // 2번: 설정 페이지
+      SettingPage(toggleTheme: widget.toggleTheme,),    // 2번: 설정 페이지
     ];
     return Scaffold(
       appBar: AppBar(
@@ -28,11 +28,6 @@ class _FramePageState extends State<FramePage> {
         title: Text('ZenTIme'),
       ),
       body: _pages[_selectedIndex],
-      floatingActionButton: FloatingActionButton(
-        onPressed: widget.toggleTheme,
-        tooltip: '라이트/다크 모드 변경',
-        child: const Icon(Icons.sunny),
-      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const [
