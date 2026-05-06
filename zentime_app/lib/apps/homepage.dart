@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import './shared_imports.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -6,14 +6,16 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: .center,
-          children: [
-            const Text('여기는 홈 창입니다'),
-          ],
-        ),
-      ),
+      body: ValueListenableBuilder(
+        valueListenable: Hive.box<UserAccountData>(DatabaseService.userBoxName).listenable(),
+        builder: (context, Box<UserAccountData> box, _) {
+          final account = box.get('profile');
+          
+          return Center(
+            child: Text('환영합니다, ${account?.name ?? '사용자'}님!'),
+          );
+        },
+      )
     );
   }
 }

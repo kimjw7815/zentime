@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import './shared_imports.dart';
 
 class SettingPage extends StatelessWidget {
   const SettingPage({super.key});
@@ -8,7 +8,7 @@ class SettingPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Column(
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('여기는 설정 창입니다'),
           ],

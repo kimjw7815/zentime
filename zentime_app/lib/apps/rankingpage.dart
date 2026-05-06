@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import './shared_imports.dart';
 
 class RankingPage extends StatelessWidget {
   const RankingPage({super.key});
@@ -8,7 +8,7 @@ class RankingPage extends StatelessWidget {
     return Scaffold(
       body: Center(
         child: Column(
-          mainAxisAlignment: .center,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const Text('여기는 랭킹 창입니다'),
           ],

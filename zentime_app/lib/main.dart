@@ -1,8 +1,23 @@
 import 'package:flutter/material.dart';
+
+import 'package:hive_flutter/hive_flutter.dart';
+import 'services/database_service.dart';
+
 import 'package:zentime/framepage.dart';
+import 'package:zentime/apps/homepage.dart';
+import 'package:zentime/apps/detailpage.dart';
+import 'package:zentime/apps/rankingpage.dart';
 import 'package:zentime/apps/settingpage.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Hive.initFlutter();
+
+  await DatabaseService.init();
+
+  // await DatabaseService.reset();
+  await DatabaseService.seedMockData();
+
   runApp(const ZenTimeApp());
 }
 
@@ -37,7 +52,7 @@ class _ZenTimeAppState extends State<ZenTimeApp> {
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: true,
-        colorScheme: .fromSeed(
+        colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           brightness: Brightness.light
         ),
@@ -45,7 +60,7 @@ class _ZenTimeAppState extends State<ZenTimeApp> {
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         useMaterial3: true,
-        colorScheme: .fromSeed(
+        colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.deepPurple,
           brightness: Brightness.dark
         ),
@@ -53,7 +68,10 @@ class _ZenTimeAppState extends State<ZenTimeApp> {
       initialRoute: '/',
       routes: {
         '/': (context) => FramePage(toggleTheme: () => _toggleTheme()),
-        '/settings': (context) => SettingPage()
+        '/home': (context) => HomePage(),
+        '/detail': (context) => DetailPage(),
+        '/ranking': (context) => RankingPage(),
+        '/settings': (context) => SettingPage(),
       }
     );
   }
