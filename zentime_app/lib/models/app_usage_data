@@ -1,0 +1,44 @@
+enum AppGoal {
+  playing,    // 유희
+  homework,   // 과제/공부
+  working,    // 업무
+  social,     // 소셜/소통
+  searching,  // 검색
+  etc         // 기타
+}
+
+extension AppGoalExtension on AppGoal {
+  String get displayName {
+    switch (this) {
+      case AppGoal.playing: return "유희";
+      case AppGoal.homework: return "과제";
+      case AppGoal.working: return "업무";
+      case AppGoal.social: return "연락";
+      case AppGoal.searching: return "검색";
+      default: return "기타";
+    }
+  }
+}
+
+class AppGoalRecord {
+  final String appName;
+  final Map<AppGoal, Duration> usageByGoal;
+  // { 1: 1시간, 2: 30분 }
+
+  AppGoalRecord({
+    required this.appName,
+    required this.usageByGoal,
+  });
+
+  // 해당 앱의 전체 사용 시간을 합산하는 기능도 넣을 수 있음
+  // Duration get totalUsage {
+  //   return usageByGoal.values.fold(Duration.zero, (prev, curr) => prev + curr);
+  // }
+}
+
+class UserUsageData {
+  final DateTime date;
+  final List<AppGoalRecord> records;
+
+  UserUsageData({required this.date, required this.records});
+}
