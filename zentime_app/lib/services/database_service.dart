@@ -76,9 +76,23 @@ class DatabaseService {
   }
 
   static Future<void> reset() async {
-    var userBox = Hive.box<UserAccountData>(userBoxName);
-    var usageBox = Hive.box<List<dynamic>>(usageBoxName);
-    userBox.clear();
-    usageBox.clear();
+    try {
+      // 박스가 열려 있는지 확인하고 가져오기
+      final userBox = Hive.isBoxOpen(userBoxName) 
+          ? Hive.box<UserAccountData>(userBoxName) 
+          : await Hive.openBox<UserAccountData>(userBoxName);
+          
+      final usageBox = Hive.isBoxOpen(usageBoxName) 
+          ? Hive.box<List<dynamic>>(usageBoxName) 
+          : await Hive.openBox<List<dynamic>>(usageBoxName);
+
+      // 반드시 await를 붙여서 작업 완료를 기다려야 함
+      await userBox.clear();
+      await usageBox.clear();
+      
+      print("Database reset complete.");
+    } catch (e) {
+      print("Reset failed: $e");
+    }
   }
 }

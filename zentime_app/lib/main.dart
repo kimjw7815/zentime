@@ -13,9 +13,9 @@ import 'package:zentime/apps/settingpage.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
-
-  // await DatabaseService.reset(); 
   await DatabaseService.init();
+
+  await DatabaseService.reset(); 
 
   await DatabaseService.seedMockData();
 

@@ -50,9 +50,7 @@ class DetailPage extends StatelessWidget {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Enum의 displayName 사용 (만약 int라면 '타입 ${entry.key}')
-                            Text(entry.key is UsageType 
-                                ? (entry.key as UsageType).displayName 
-                                : '타입 ${entry.key}'),
+                            Text((entry.key).displayName),
                             // 마이크로초를 분/시간 단위로 변환해서 출력
                             Text(_formatDuration(entry.value)),
                           ],
