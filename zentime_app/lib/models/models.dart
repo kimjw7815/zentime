@@ -1,3 +1,4 @@
+// models.dart start
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 part 'models.g.dart';
@@ -78,3 +79,4 @@ extension AppGoalExtension on UsageType {
     }
   }
 }
+// models.dart end

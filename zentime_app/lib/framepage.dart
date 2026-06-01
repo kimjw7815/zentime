@@ -1,3 +1,4 @@
+//framepage.dart start
 import 'package:flutter/material.dart';
 import 'package:zentime/apps/homepage.dart';
 import 'package:zentime/apps/detailpage.dart';
@@ -19,8 +20,8 @@ class _FramePageState extends State<FramePage> {
     final List<Widget> _pages = [
       const HomePage(),    // 0번: 홈 페이지
       const DetailPage(),    // 1번: 상세 페이지
-      const RankingPage(),    // 0번: 랭킹 페이지
-      SettingPage(toggleTheme: widget.toggleTheme,),    // 2번: 설정 페이지
+      const RankingPage(),    // 2번: 랭킹 페이지
+      SettingPage(toggleTheme: widget.toggleTheme,),    // 3번: 설정 페이지
     ];
     return Scaffold(
       appBar: AppBar(
@@ -58,3 +59,4 @@ class _FramePageState extends State<FramePage> {
     );
   }
 }
+//framepage.dart end

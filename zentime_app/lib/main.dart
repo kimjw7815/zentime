@@ -1,3 +1,4 @@
+//main.dart start
 import 'package:flutter/material.dart';
 
 import 'package:hive_flutter/hive_flutter.dart';
@@ -5,10 +6,24 @@ import 'package:zentime/models/models.dart';
 import 'services/database_service.dart';
 
 import 'package:zentime/framepage.dart';
-import 'package:zentime/apps/homepage.dart';
-import 'package:zentime/apps/detailpage.dart';
-import 'package:zentime/apps/rankingpage.dart';
-import 'package:zentime/apps/settingpage.dart';
+// import 'package:zentime/apps/homepage.dart';
+// import 'package:zentime/apps/detailpage.dart';
+// import 'package:zentime/apps/rankingpage.dart';
+// import 'package:zentime/apps/settingpage.dart';
+import 'package:zentime/apps/slidingwidget.dart';
+
+@pragma("vm:entry-point")
+void overlayMain() {
+  runApp(
+    const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Colors.transparent, // 여기서 경고창 디자인을 마음껏 해주면 됨!
+        body: SlidingWarningWidget(),
+      ),
+    ),
+  );
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,15 +85,16 @@ class _ZenTimeAppState extends State<ZenTimeApp> {
           brightness: Brightness.dark
         ),
       ),
-      initialRoute: '/',
-      routes: {
-        '/': (context) => FramePage(toggleTheme: () => _toggleTheme(),),
-        '/home': (context) => HomePage(),
-        '/detail': (context) => DetailPage(),
-        '/ranking': (context) => RankingPage(),
-        '/settings': (context) => SettingPage(toggleTheme: () => _toggleTheme(),),
-      }
+      // initialRoute: '/',
+      // routes: {
+      //   '/': (context) => FramePage(toggleTheme: () => _toggleTheme(),),
+      //   '/home': (context) => HomePage(),
+      //   '/detail': (context) => DetailPage(),
+      //   '/ranking': (context) => RankingPage(),
+      //   '/settings': (context) => SettingPage(toggleTheme: () => _toggleTheme(),),
+      // }
+      home: FramePage(toggleTheme: () => _toggleTheme())
     );
   }
-
 }
+// main.dart end

@@ -1,3 +1,4 @@
+// database_service.dart start
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/models.dart'; // 하나로 합친 모델 파일
 
@@ -96,3 +97,4 @@ class DatabaseService {
     }
   }
 }
+// database_service.dart end
