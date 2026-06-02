@@ -1,6 +1,7 @@
 // slidingwidget.dart start
 import './shared_imports.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+import '../services/database_service.dart';
 // 🔥 models.dart가 포함되어 있지 않다면 경로에 맞게 임포트 해주세요!
 
 class SlidingWarningWidget extends StatefulWidget {
@@ -91,9 +92,11 @@ class _SlidingWarningWidgetState extends State<SlidingWarningWidget> {
                       runSpacing: 14, // 세로 줄 간격
                       alignment: WrapAlignment.center,
                       children: UsageType.values.map((type) {
+                        final double screenWidth = MediaQuery.of(context).size.width;
+                        final double buttonWidth = screenWidth > 0 ? (screenWidth - 52) / 2 : 150.0;
                         return SizedBox(
                           // 화면 너비에 맞춰 칩이 2열로 이쁘게 쪼개지도록 너비 계산
-                          width: (MediaQuery.of(context).size.width - 52) / 2,
+                          width: buttonWidth,
                           height: 52,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
@@ -109,8 +112,7 @@ class _SlidingWarningWidgetState extends State<SlidingWarningWidget> {
                               print("🎯 사용자가 선택한 목적: ${type.displayName}");
                               
                               // TODO: 여기에 Hive나 백그라운드 데이터베이스에 사용 기록(AppUsageData) 누적하는 로직을 추가하면 됨!
-                              
-                              // 목적을 당당히 밝혔으니 오버레이 닫고 통과시켜주기!
+                              await DatabaseService.updateLastLog(type);
                               await FlutterOverlayWindow.closeOverlay();
                             },
                             child: Row(

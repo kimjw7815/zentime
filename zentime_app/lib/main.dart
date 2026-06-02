@@ -13,7 +13,8 @@ import 'package:zentime/framepage.dart';
 import 'package:zentime/apps/slidingwidget.dart';
 
 @pragma("vm:entry-point")
-void overlayMain() {
+void overlayMain() async {
+  await DatabaseService.init();
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -30,9 +31,9 @@ void main() async {
   await Hive.initFlutter();
   await DatabaseService.init();
 
-  await DatabaseService.reset(); 
+  // await DatabaseService.reset(); 
 
-  await DatabaseService.seedMockData();
+  // await DatabaseService.seedMockData();
 
   runApp(const ZenTimeApp());
 }

@@ -79,4 +79,25 @@ extension AppGoalExtension on UsageType {
     }
   }
 }
+
+@HiveType(typeId: 3)
+enum LogType {
+  @HiveField(0) enter, // 진입
+  @HiveField(1) leave, // 이탈
+}
+
+@HiveType(typeId:4)
+class RawLog {
+  @HiveField(0) final DateTime dateTime;
+  @HiveField(1) final String appName;
+  @HiveField(2) final LogType logType;
+  @HiveField(3) final UsageType usageType;
+
+  RawLog({
+    required this.dateTime,
+    required this.appName,
+    required this.logType,
+    required this.usageType,
+  });
+}
 // models.dart end
