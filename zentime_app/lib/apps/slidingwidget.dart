@@ -1,18 +1,19 @@
 // slidingwidget.dart start
 import './shared_imports.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
-import '../services/database_service.dart';
-// 🔥 models.dart가 포함되어 있지 않다면 경로에 맞게 임포트 해주세요!
 
-class SlidingWarningWidget extends StatefulWidget {
-  const SlidingWarningWidget({super.key});
+import 'dart:isolate';
+import 'dart:ui';
+
+class SlidingWidget extends StatefulWidget {
+  const SlidingWidget({super.key});
 
   @override
-  State<SlidingWarningWidget> createState() => _SlidingWarningWidgetState();
+  State<SlidingWidget> createState() => _SlidingWidgetState();
 }
 
-class _SlidingWarningWidgetState extends State<SlidingWarningWidget> {
-  double _offsetY = 1.0; // 1.0은 화면 아래 숨겨진 상태, 0.0은 정위치
+class _SlidingWidgetState extends State<SlidingWidget> {
+  double _offsetY = 0.0; // 1.0은 화면 아래 숨겨진 상태, 0.0은 정위치
 
   @override
   void initState() {
@@ -112,7 +113,14 @@ class _SlidingWarningWidgetState extends State<SlidingWarningWidget> {
                               print("🎯 사용자가 선택한 목적: ${type.displayName}");
                               
                               // TODO: 여기에 Hive나 백그라운드 데이터베이스에 사용 기록(AppUsageData) 누적하는 로직을 추가하면 됨!
-                              await DatabaseService.updateLastLog(type);
+                              final SendPort? sendPort = IsolateNameServer.lookupPortByName('overlay_to_main_channel');
+                              if (sendPort != null) {
+                                // 2. Dart VM 내부 메모리를 통해 직접 데이터 송신 (안드로이드 채널 우회)
+                                sendPort.send(type.name);
+                                print("⚡ IsolateNameServer 송신 성공");
+                              } else {
+                                print("❌ 메인 아이솔레이트의 송신 포트를 찾을 수 없습니다.");
+                              }
                               await FlutterOverlayWindow.closeOverlay();
                             },
                             child: Row(

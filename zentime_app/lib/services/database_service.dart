@@ -160,6 +160,7 @@ class DatabaseService {
     );
     await rawLogBox.putAt(lastIndex, updateLog);
     print("버튼 눌려서 목적수정 됐음요");
+    print("usageType이 ${lastLog.usageType}에서 ${updateLog.usageType}으로 바뀜");
   }
 }
 

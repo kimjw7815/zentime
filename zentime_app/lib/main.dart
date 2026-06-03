@@ -14,13 +14,14 @@ import 'package:zentime/apps/slidingwidget.dart';
 
 @pragma("vm:entry-point")
 void overlayMain() async {
-  await DatabaseService.init();
+  print("오버레이 엔트리포인트 호출");
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(
     const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.transparent, // 여기서 경고창 디자인을 마음껏 해주면 됨!
-        body: SlidingWarningWidget(),
+        body: SlidingWidget(),
       ),
     ),
   );
