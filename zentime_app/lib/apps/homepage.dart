@@ -1,16 +1,11 @@
 import 'dart:convert';
-import 'dart:math';
 import './shared_imports.dart';
 import '../services/app_detection_service.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'dart:async';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:zentime/models/models.dart';
-import '../services/database_service.dart';
 
 Future<bool> checkAndRequestPermissions() async {
   // 오버레이 권한 체크
