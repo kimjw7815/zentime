@@ -110,16 +110,16 @@ class _SlidingWidgetState extends State<SlidingWidget> {
                               padding: const EdgeInsets.symmetric(horizontal: 16),
                             ),
                             onPressed: () async {
-                              print("🎯 사용자가 선택한 목적: ${type.displayName}");
+                              print("[overlay isolate] 사용자가 선택한 목적: ${type.displayName}");
                               
                               // TODO: 여기에 Hive나 백그라운드 데이터베이스에 사용 기록(AppUsageData) 누적하는 로직을 추가하면 됨!
-                              final SendPort? sendPort = IsolateNameServer.lookupPortByName('overlay_to_main_channel');
+                              final SendPort? sendPort = IsolateNameServer.lookupPortByName('overlay_to_foreground_channel');
                               if (sendPort != null) {
                                 // 2. Dart VM 내부 메모리를 통해 직접 데이터 송신 (안드로이드 채널 우회)
                                 sendPort.send(type.name);
-                                print("⚡ IsolateNameServer 송신 성공");
+                                print("[overlay isolate] IsolateNameServer 송신 성공");
                               } else {
-                                print("❌ 메인 아이솔레이트의 송신 포트를 찾을 수 없습니다.");
+                                print("❌ [overlay isolate] foreground isolate의 송신 포트를 찾을 수 없습니다.");
                               }
                               await FlutterOverlayWindow.closeOverlay();
                             },

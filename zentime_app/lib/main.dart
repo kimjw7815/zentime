@@ -1,3 +1,4 @@
+// main.dart. start
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
@@ -29,7 +30,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
   await DatabaseService.init();
-  AppDetectionService().initIsolatePortListener();
 
   // 필요 시 주석 해제하여 테스트
   // await DatabaseService.reset(); 
@@ -147,3 +147,4 @@ class _ZenTimeAppState extends State<ZenTimeApp> {
     );
   }
 }
+// main.dart end

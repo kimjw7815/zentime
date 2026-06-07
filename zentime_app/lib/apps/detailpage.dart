@@ -50,7 +50,7 @@ class _DetailPageState extends State<DetailPage> {
         _usageDataMap = tempMap;
       });
     } catch (e) {
-      print("❌ [상세페이지] 데이터 로드 중 에러 발생: $e");
+      print("❌ [main isolate] 데이터 로드 중 에러 발생: $e");
     } finally {
       // 💡 어떤 예외가 터져도 하이브 박스는 무조건 안전하게 닫히도록 보장
       await usageBox.close();

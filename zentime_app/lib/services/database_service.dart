@@ -33,7 +33,7 @@ class DatabaseService {
     }
 
     _isInitialized=true;
-    print('박스열엇음');
+    print('[main isolate] or [overlay isolate] 박스열엇음');
   }
 
   // 2. 가짜 데이터 주입 (테스트용)
@@ -126,7 +126,7 @@ class DatabaseService {
         logType: logType,
         usageType: usageType
       ));
-      print("🌊 [데이터 레이크] 로그 적치 완료: $appName | $logType | $usageType");
+      print("🌊 [foreground isolate] lake: $appName | $logType | $usageType");
 
     } finally {
       await rawLogBox.close();
@@ -138,7 +138,7 @@ class DatabaseService {
     final rawLogBox = await Hive.openBox<RawLog>(rawLogBoxName);
     try {
       if (rawLogBox.isEmpty) {
-        print("뭔가 이상함 박스가 비어있음");
+        print("[foreground isolate] 뭔가 이상함 박스가 비어있음");
         return;
       }
       int targetIndex = -1;
@@ -150,7 +150,7 @@ class DatabaseService {
         }
       }
       if (targetIndex == -1) {
-        print("❌ [DB 업데이트 오류] 업데이트할 대상을 찾지 못했습니다. (LogType.enter 가 없음)");
+        print("❌ [foreground isolate]]B 업데이트 오류: 업데이트할 대상을 찾지 못했습니다. (LogType.enter 가 없음)");
         return;
       }
       final RawLog lastEnterLog = rawLogBox.getAt(targetIndex)!;
@@ -161,8 +161,8 @@ class DatabaseService {
         usageType: usageType,
       );
       await rawLogBox.putAt(targetIndex, updateLog);
-      print("버튼 눌려서 목적수정 됐음요");
-      print("usageType이 ${lastEnterLog.usageType}에서 ${updateLog.usageType}으로 바뀜");
+      print("[foreground isolate] 버튼 눌려서 목적수정 됐음요");
+      print("[foreground isolate] usageType이 ${lastEnterLog.usageType}에서 ${updateLog.usageType}으로 바뀜");
     } finally {
       await rawLogBox.close();
     }

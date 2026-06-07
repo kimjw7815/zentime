@@ -39,7 +39,7 @@ Future<bool> loginWithGoogleAndBackend() async {
     );
     
     if (!GoogleSignIn.instance.supportsAuthenticate()) {
-      print("이 플랫폼에서는 구글 인증을 지원하지 않습니다.");
+      print("[main isolate] 이 플랫폼에서는 구글 인증을 지원하지 않습니다.");
       return false;
     }
     // 1021352283625-i9bb25dovfalon0024rvk14b33uqah2h.apps.googleusercontent.com
@@ -49,7 +49,7 @@ Future<bool> loginWithGoogleAndBackend() async {
     );
 
     if (googleUser == null) {
-      print("사용자가 로그인을 취소함");
+      print("[main isolate] 사용자가 로그인을 취소함");
       return false;
     }
 
@@ -58,7 +58,7 @@ Future<bool> loginWithGoogleAndBackend() async {
     final String? idToken = googleAuth.idToken; // 🔑 이게 핵심입니다.
 
     if (idToken == null) {
-      print("idToken을 가져오는데 실패했습니다.");
+      print("[main isolate] idToken을 가져오는데 실패했습니다.");
       return false;
     }
 
@@ -89,16 +89,16 @@ Future<bool> loginWithGoogleAndBackend() async {
       await userBox.put('profile', userAccount);
       await userBox.close();
       
-      print("백엔드 로그인 성공! JWT 토큰: ${responseData['access_token']}, id: ${userMap['id']}");
+      print("[main isolate] 백엔드 로그인 성공! JWT 토큰: ${responseData['access_token']}, id: ${userMap['id']}");
       
       return true;
     } else {
-      print("백엔드 인증 실패: ${response.statusCode}");
+      print("[main isolate] 백엔드 인증 실패: ${response.statusCode}");
       return false;
     }
 
   } catch (error) {
-    print("구글 로그인 에러: $error");
+    print("[main isolate] 구글 로그인 에러: $error");
     return false;
   }
 }

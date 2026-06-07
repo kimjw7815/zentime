@@ -22,8 +22,9 @@ class SecureDetectionHandler extends TaskHandler {
 
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter starter) async {
-    print("🚀 [포그라운드 아이솔레이트] 백그라운드 감시 리스너 가동");
+    print("🚀 [foreground isolate] 백그라운드 감시 리스너 가동");
     await DatabaseService.init(); // 별도 isolate이므로 Hive 재초기화 필수
+    AppDetectionService().initIsolatePortListener();
     
     // 원래 AppDetectionService에 있던 리스너 로직을 이 안으로 이사 시킵니다.
     _sub = FlutterAccessibilityService.accessStream.listen((event) async {
@@ -62,7 +63,8 @@ class SecureDetectionHandler extends TaskHandler {
   @override
   Future<void> onDestroy(DateTime timestamp, bool isTimeout) async {
     await _sub?.cancel();
-    print("🛑 [포그라운드 아이솔레이트] 백그라운드 감시 리스너 종료");
+    IsolateNameServer.removePortNameMapping('overlay_to_foreground_channel');
+    print("🛑 [foreground isolate] 백그라운드 감시 리스너 종료");
   }
 
   @override
@@ -78,19 +80,19 @@ class AppDetectionService {
 
   /// 포트 리스너 초기화 (앱 시작 시 최초 1회 호출)
   void initIsolatePortListener() {
-    print("아이솔레이트 포트 리스너 시작");
+    print("[foreground isolate] 포트 리스너 시작");
     final ReceivePort receivePort = ReceivePort();
-    IsolateNameServer.removePortNameMapping('overlay_to_main_channel');
-    IsolateNameServer.registerPortWithName(receivePort.sendPort, 'overlay_to_main_channel');
+    IsolateNameServer.removePortNameMapping('overlay_to_foreground_channel');
+    IsolateNameServer.registerPortWithName(receivePort.sendPort, 'overlay_to_foreground_channel');
     
     receivePort.listen((dynamic message) async {
-      print("🚀 [메인 아이솔레이트] IsolateNameServer 수신 데이터: $message");
+      print("🚀 [foreground isolate] IsolateNameServer 수신 데이터: $message");
       if (message is String) {
         try {
           final usageType = UsageType.values.byName(message);
           await DatabaseService.updateLastEnterLog(usageType);
         } catch (e) {
-          print("❌ 백그라운드 DB 업데이트 중 에러: $e");
+          print("[foreground isolate] ❌ 백그라운드 DB 업데이트 중 에러: $e");
         }
       }
     });
@@ -126,9 +128,9 @@ class AppDetectionService {
   void startAppDetection() async {
     initForegroundTask(); // 포그라운드 서비스 실행
     if (await FlutterForegroundTask.isRunningService) {
-      print("이미 구동 중");
+      print("[main isolate] foreground task가 이미 구동 중");
     } else {
-      print("ForegroundTask 서비스 시작");
+      print("[main isolate] foreground task 서비스 시작");
       await FlutterForegroundTask.startService(
         notificationTitle: 'ZenTime 작동 중',
         notificationText: '현재 앱 사용 목적을 모니터링하고 있습니다.',
@@ -139,7 +141,7 @@ class AppDetectionService {
 
   /// 감시 중지
   void stopAppDetection() async {
-    print("🛑 디톡스 감시 중지");
+    print("[main isolate] 🛑 디톡스 감시 중지");
     if (await FlutterForegroundTask.isRunningService) {
       await FlutterForegroundTask.stopService();
     }

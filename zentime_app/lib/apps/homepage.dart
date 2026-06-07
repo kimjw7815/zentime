@@ -11,7 +11,7 @@ Future<bool> checkAndRequestPermissions() async {
   // 오버레이 권한 체크
   bool isOverlayGranted = await FlutterOverlayWindow.isPermissionGranted();
   if (!isOverlayGranted) {
-    print("❌ 오버레이 권한 없음 -> 설정창으로 이동");
+    print("❌ [main isolate] 오버레이 권한 없음 -> 설정창으로 이동");
     await FlutterOverlayWindow.requestPermission();
     return false;
   }
@@ -19,7 +19,7 @@ Future<bool> checkAndRequestPermissions() async {
   // 접근성 권한 체크
   bool isAccessibilityEnabled = await FlutterAccessibilityService.isAccessibilityPermissionEnabled();
   if (!isAccessibilityEnabled) {
-    print("❌ 접근성 권한 없음 -> 설정창으로 이동");
+    print("❌ [main isolate] 접근성 권한 없음 -> 설정창으로 이동");
     await FlutterAccessibilityService.requestAccessibilityPermission();
     return false;
   }
@@ -27,7 +27,7 @@ Future<bool> checkAndRequestPermissions() async {
   // 알림 권한 체크
   NotificationPermission notificationPermission = await FlutterForegroundTask.checkNotificationPermission();
   if (notificationPermission == NotificationPermission.denied) {
-    print("❌ 알림 권한 없음 -> 권한 요청 팝업");
+    print("❌ [main isolate] 알림 권한 없음 -> 권한 요청 팝업");
     await FlutterForegroundTask.requestNotificationPermission();
     return false;
   }
@@ -53,7 +53,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    print("initState 호출됨요!!");
+    print("[main isolate] initState 호출됨요!!");
     _initData();
   }
 
@@ -71,7 +71,7 @@ class _HomePageState extends State<HomePage> {
 
     // 3. 서비스 동작 상태 확인
     bool isServiceRunningTemp = await FlutterForegroundTask.isRunningService;
-    print("isServiceRunningTemp 받았음요: $isServiceRunningTemp");
+    print("[main isolate] isServiceRunningTemp 받았음요: $isServiceRunningTemp");
 
     setState(() {
       isServiceRunning = isServiceRunningTemp;
@@ -165,7 +165,7 @@ class _HomePageState extends State<HomePage> {
       final String serverIp = "146.56.175.74"; 
       final url = Uri.parse('http://$serverIp:8000/sync-usage');
 
-      print("🚀 [서버 동기화] 진짜 데이터 전송 시작...");
+      print("🚀 [main isolate] 진짜 데이터 전송 시작...");
       
       final response = await http.post(
         url,
@@ -174,19 +174,19 @@ class _HomePageState extends State<HomePage> {
       );
 
       if (response.statusCode == 200) {
-        print("🟢 전송 성공: ${response.body}");
+        print("🟢 [main isolate] 전송 성공: ${response.body}");
         _lastSyncTime = DateTime.now(); // 쿨타임 타임스탬프 기록
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('🟢 서버 데이터베이스 동기화 완료!'), backgroundColor: Colors.green),
         );
       } else {
-        print("❌ 전송 실패 (상태코드): ${response.statusCode} | 바디: ${response.body}");
+        print("❌ [main isolate] 전송 실패 (상태코드): ${response.statusCode} | 바디: ${response.body}");
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ 동기화 실패 (코드: ${response.statusCode})'), backgroundColor: Colors.red),
+          SnackBar(content: Text('❌ [main isolate] 동기화 실패 (코드: ${response.statusCode})'), backgroundColor: Colors.red),
         );
       }
     } catch (e) {
-      print("❌ 전송 중 예외 에러 발생: $e");
+      print("❌ [main isolate] 전송 중 예외 에러 발생: $e");
     } finally {
       // 6. 자원 반환 및 UI 락 해제
       await userBox.close();
