@@ -1,9 +1,7 @@
 // homepage.dart start
-import 'dart:convert';
 import './shared_imports.dart';
 import '../services/app_detection_service.dart';
 import '../services/util_service.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'dart:async';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';

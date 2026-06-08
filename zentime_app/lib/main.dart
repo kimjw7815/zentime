@@ -5,7 +5,6 @@ import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:zentime/models/models.dart';
 import 'services/database_service.dart';
-import 'services/app_detection_service.dart';
 
 import 'package:zentime/framepage.dart';
 import 'package:zentime/apps/slidingwidget.dart';
