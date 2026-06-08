@@ -58,15 +58,15 @@ class DatabaseService {
           AppUsageData(
             appName: 'Youtube',
             usageByType: {
-              UsageType.etc: Duration(hours: 2).inMicroseconds,
-              UsageType.homework: Duration(hours: 3).inMicroseconds
+              UsageType.etc: Duration(hours: 2).inSeconds,
+              UsageType.homework: Duration(hours: 3).inSeconds
             },
           ),
           AppUsageData(
             appName: 'Instagram',
             usageByType: {
-              UsageType.playing: Duration(hours: 1).inMicroseconds,
-              UsageType.searching: Duration(hours: 2).inMicroseconds
+              UsageType.playing: Duration(hours: 1).inSeconds,
+              UsageType.searching: Duration(hours: 2).inSeconds
             }
           ),
         ]);
@@ -77,14 +77,14 @@ class DatabaseService {
           AppUsageData(
             appName: 'Github',
             usageByType: {
-              UsageType.social: Duration(hours: 4).inMicroseconds,
-              UsageType.working: Duration(hours: 5).inMicroseconds
+              UsageType.social: Duration(hours: 4).inSeconds,
+              UsageType.working: Duration(hours: 5).inSeconds
             }
           ),
           AppUsageData(
             appName: 'Youtube',
             usageByType: {
-              UsageType.playing: Duration(minutes: 30).inMicroseconds,
+              UsageType.playing: Duration(minutes: 30).inSeconds,
             }
           ),
         ]);
@@ -168,7 +168,7 @@ class DatabaseService {
     }
   }
 
-  static rawLogToUsageData() async {
+  static Future<void> rawLogToUsageData() async {
     final rawLogBox = await Hive.openBox<RawLog>(rawLogBoxName);
     final usageBox = await Hive.openBox<List<dynamic>>(usageBoxName);
     try {
@@ -184,8 +184,8 @@ class DatabaseService {
         else if (rawLog.logType==LogType.enter && logs[i+1].logType!=LogType.leave) continue;
         else if (rawLog.logType==LogType.enter && logs[i+1].logType==LogType.leave) {
           final logDay=rawLog.dateTime;
-          final logDayDateKey="${logDay.year}-${logDay.month}-${logDay.day}";
-          final int usageMicros = logs[i+1].dateTime.difference(rawLog.dateTime).inMicroseconds;
+          final logDayDateKey=logDay.toIso8601String().split('T')[0];
+          final int usageMicros = logs[i+1].dateTime.difference(rawLog.dateTime).inSeconds;
           temporaryData.putIfAbsent(logDayDateKey, () => {});
           temporaryData[logDayDateKey]!.putIfAbsent(rawLog.appName, () => {});
           final currentUsageType = rawLog.usageType;
@@ -215,8 +215,31 @@ class DatabaseService {
     }
   }
 
-  static Future<void> getWastedTime() async {
-    
+  static Future<int> getWastedTimeByDate(DateTime date) async {
+    print("[main isolate] [database service] getWastedTimeByDate 호출");
+    final usageBox = await Hive.openBox<List<dynamic>>(usageBoxName);
+    try {
+      final dateKey = date.toIso8601String().split('T')[0];
+      final List<dynamic>? dailyData = usageBox.get(dateKey);
+      print("[main isolate] [database service] dailyData: $dailyData");
+
+      if (dailyData == null || dailyData.isEmpty) return 0;
+
+      int totalWastedMicros = 0;
+
+      for (var item in dailyData) {
+        if (item is AppUsageData) {
+          // playing(유희) 시간 더하기
+          totalWastedMicros += item.usageByType[UsageType.playing] ?? 0;
+          // etc(기타) 시간 더하기
+          totalWastedMicros += item.usageByType[UsageType.etc] ?? 0;
+        }
+      }
+
+      return totalWastedMicros;
+    } finally {
+      await usageBox.close();
+    }
   }
 }
 

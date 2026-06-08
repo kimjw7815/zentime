@@ -112,16 +112,6 @@ class AppDetectionService {
         eventAction: ForegroundTaskEventAction.once(),
       ),
     );
-    if (await FlutterForegroundTask.isRunningService) {
-      print("이미 ForegroundTask가 서비스를하고 있음요");
-    } else {
-      print("ForegroundTask의 서비스를 시작하고 있음요");
-      await FlutterForegroundTask.startService(
-        notificationTitle: 'ZenTime 작동 중',
-        notificationText: '현재 앱 사용 목적을 모니터링하고 있습니다.',
-      );
-      print("ForegroundTask의 서비스를 시작했음요");
-    }
   }
 
   /// 감시 시작 스위치 타워

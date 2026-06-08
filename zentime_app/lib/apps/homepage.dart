@@ -1,11 +1,14 @@
+// homepage.dart start
 import 'dart:convert';
 import './shared_imports.dart';
 import '../services/app_detection_service.dart';
+import '../services/util_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'dart:async';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+
 
 Future<bool> checkAndRequestPermissions() async {
   // 오버레이 권한 체크
@@ -47,8 +50,8 @@ class _HomePageState extends State<HomePage> {
 
   // 💡 실시간 스트림 대신 화면 갱신 시점에만 안전하게 데이터를 담아둘 상태 변수들
   UserAccountData? _account;
+  int? _wastedTime;
   List<RawLog> _logs = [];
-  DateTime? _lastSyncTime; // 서버 연동 10분 제한용 타임스탬프
 
   @override
   void initState() {
@@ -81,6 +84,8 @@ class _HomePageState extends State<HomePage> {
 
   // 💡 박스를 안전하게 한 번 열어서 변수에 데이터를 복사한 후 즉시 닫는 핵심 로직
   Future<void> _loadDataFromDatabase() async {
+    int tempWastedTime=await DatabaseService.getWastedTimeByDate(DateTime.now());
+    _wastedTime=Duration(seconds: tempWastedTime).inSeconds;
     final userBox = await Hive.openBox<UserAccountData>(DatabaseService.userBoxName);
     final logBox = await Hive.openBox<RawLog>(DatabaseService.rawLogBoxName);
 
@@ -91,107 +96,6 @@ class _HomePageState extends State<HomePage> {
       // 컴포넌트 렌더링 시 락 걸리지 않게 무조건 닫기 보장
       await userBox.close();
       await logBox.close();
-    }
-  }
-
-  // 💡 가짜 파일 대신 Hive의 진짜 데이터를 JSON으로 파싱해서 서버에 동기화하는 로직
-  Future<void> _sendDataWithCooldown() async {
-    final now = DateTime.now();
-    
-    // 1. 10분 쿨타임 체크 (메모장 요구사항 반영)
-    if (_lastSyncTime != null) {
-      final difference = now.difference(_lastSyncTime!).inMinutes;
-      if (difference < 10) {
-        final remaining = 10 - difference;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('⚠️ 과도한 동기화 방지! $remaining분 후에 다시 시도할 수 있습니다.'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-    }
-
-    setState(() { _isRefreshing = true; });
-
-    // 2. Hive 박스 안전하게 열기
-    final userBox = await Hive.openBox<UserAccountData>(DatabaseService.userBoxName);
-    final usageBox = await Hive.openBox<List<dynamic>>(DatabaseService.usageBoxName);
-
-    try {
-      final profile = userBox.get('profile');
-      if (profile == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('❌ 전송 실패: 유저 프로필 데이터가 없습니다.'), backgroundColor: Colors.red),
-        );
-        return;
-      }
-
-      // 3. usageBox에 쌓인 로컬 정제 데이터를 백엔드 schemas.SyncData 구조에 맞게 변환
-      List<Map<String, dynamic>> usageListJson = [];
-      
-      for (var key in usageBox.keys) {
-        final rawList = usageBox.get(key);
-        if (rawList != null) {
-          for (var item in rawList) {
-            if (item is AppUsageData) {
-              // 백엔드의 u.usage_data.get(usage_type, 0) 구조 분석 결과:
-              // Enum key들을 문자열 인덱스숫자("0", "1" 등)로 매핑해주어야 백엔드가 정상 합산함
-              Map<String, int> formattedUsageByType = {};
-              item.usageByType.forEach((type, value) {
-                formattedUsageByType[type.index.toString()] = value;
-              });
-
-              usageListJson.add({
-                'appName': item.appName,
-                'usageByType': formattedUsageByType,
-              });
-            }
-          }
-        }
-      }
-
-      // 4. 최종 전송용 통짜 JSON 구조 바디 조립
-      final Map<String, dynamic> syncPayload = {
-        'userId': profile.id,
-        'name': profile.name,
-        'email': profile.email,
-        'themeModeIndex': profile.themeModeIndex,
-        'usageList': usageListJson,
-      };
-
-      // 5. 서버 통신 엔드포인트 타격 (`/sync-usage`)
-      final String serverIp = "146.56.175.74"; 
-      final url = Uri.parse('http://$serverIp:8000/sync-usage');
-
-      print("🚀 [main isolate] 진짜 데이터 전송 시작...");
-      
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(syncPayload), // 구조화된 JSON 데이터 주입
-      );
-
-      if (response.statusCode == 200) {
-        print("🟢 [main isolate] 전송 성공: ${response.body}");
-        _lastSyncTime = DateTime.now(); // 쿨타임 타임스탬프 기록
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('🟢 서버 데이터베이스 동기화 완료!'), backgroundColor: Colors.green),
-        );
-      } else {
-        print("❌ [main isolate] 전송 실패 (상태코드): ${response.statusCode} | 바디: ${response.body}");
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('❌ [main isolate] 동기화 실패 (코드: ${response.statusCode})'), backgroundColor: Colors.red),
-        );
-      }
-    } catch (e) {
-      print("❌ [main isolate] 전송 중 예외 에러 발생: $e");
-    } finally {
-      // 6. 자원 반환 및 UI 락 해제
-      await userBox.close();
-      await usageBox.close();
-      setState(() { _isRefreshing = false; });
     }
   }
 
@@ -209,10 +113,9 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 20),
             Text('환영합니다, ${_account?.name ?? '사용자'}님!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            TextButton(
-              onPressed: _sendDataWithCooldown, 
-              child: const Text('서버 데이터베이스 연결 (10분 제한)', style: TextStyle(color: Colors.purple, fontSize: 16))
-            ),
+            Text('오늘은 ${Util.formatDuration(_wastedTime ?? 0)}만큼 시간을 낭비하셨어요!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('${Util.calculateWastedMoney(_wastedTime ?? 0)}원 만큼 돈을 낭비하셨네요!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
             const SizedBox(height: 20),
             const Text('zentime을 원하는대로 On/Off 하세요!'),
             Switch(
@@ -292,3 +195,5 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
+
+// homepage.dart end

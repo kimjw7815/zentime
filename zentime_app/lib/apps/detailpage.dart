@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'package:zentime/models/models.dart';
-import '../services/database_service.dart';
+// detailpage.dart start
+import '../services/util_service.dart';
 import './shared_imports.dart';
 
 class DetailPage extends StatefulWidget {
@@ -28,27 +26,41 @@ class _DetailPageState extends State<DetailPage> {
     if (!mounted) return;
     setState(() { _isLoading = true; });
 
-    final usageBox = await Hive.openBox<List<dynamic>>(DatabaseService.usageBoxName);
+    final usageBox = await Hive.openBox(DatabaseService.usageBoxName);
     
+    try {
+      print("📦 현재 박스에 저장된 총 데이터 개수: ${usageBox.length}");
+      
+      for (var key in usageBox.keys) {
+        final rawData = usageBox.get(key);
+        
+        print("----------------------------------------------------------------");
+        print("🔑 [Key]: $key");
+        // ⭐ 이 부분이 핵심입니다. Dart가 실시간으로 인식하는 진짜 타입을 출력합니다.
+        print("🧪 [Actual Runtime Type]: ${rawData.runtimeType}"); 
+        print("📦 [Value]: $rawData");
+      }
+    } catch (e) {
+      print("❌ 디버그 출력 중 에러 발생: $e");
+    }
+
     try {
       final Map<String, List<AppUsageData>> tempMap = {};
       
       for (var key in usageBox.keys) {
         final rawList = usageBox.get(key);
-        if (rawList != null) {
+        print(rawList);
+        if (rawList is List) {
           // 데이터 유효성 검사 및 명시적 캐스팅 파싱
           final List<AppUsageData> typedList = rawList
-              .where((item) => item is AppUsageData)
-              .cast<AppUsageData>()
+              .whereType<AppUsageData>()
               .toList();
           
           tempMap[key.toString()] = typedList;
         }
       }
 
-      setState(() {
-        _usageDataMap = tempMap;
-      });
+      setState(() {_usageDataMap = tempMap;});
     } catch (e) {
       print("❌ [main isolate] 데이터 로드 중 에러 발생: $e");
     } finally {
@@ -58,15 +70,6 @@ class _DetailPageState extends State<DetailPage> {
         setState(() { _isLoading = false; });
       }
     }
-  }
-
-  // 시간 포맷팅 헬퍼 함수
-  String _formatDuration(int microseconds) {
-    final minutes = (microseconds / 1000000 / 60).round();
-    if (minutes >= 60) {
-      return '${minutes ~/ 60}시간 ${minutes % 60}분';
-    }
-    return '$minutes분';
   }
 
   @override
@@ -81,7 +84,17 @@ class _DetailPageState extends State<DetailPage> {
     final sortedKeys = _usageDataMap.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return Scaffold(
-      appBar: AppBar(title: const Text('사용 기록 상세')),
+      appBar: AppBar(
+        title: const Text('사용 기록 상세'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: '새로고침',
+            // 로딩 중일 때는 버튼을 비활성화하여 중복 터치 방지
+            onPressed: _isLoading ? null : _loadDetailData, 
+          ),
+        ],
+      ),
       // 💡 수동 데이터 동기화를 보완하기 위한 당겨서 새로고침 위젯 도입
       body: RefreshIndicator(
         onRefresh: _loadDetailData,
@@ -141,7 +154,7 @@ class _DetailPageState extends State<DetailPage> {
                                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                                     ),
                                     Text(
-                                      _formatDuration(entry.value),
+                                      Util.formatDuration(entry.value),
                                       style: const TextStyle(fontWeight: FontWeight.w500),
                                     ),
                                   ],
@@ -161,3 +174,4 @@ class _DetailPageState extends State<DetailPage> {
     );
   }
 }
+// detailpage.dart end
