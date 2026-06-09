@@ -69,14 +69,13 @@ class _SettingPageState extends State<SettingPage> {
                       backgroundColor:
                           isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
                       child: Text(
-                        (_account?.name ?? '?').isNotEmpty
+                        (_account != null && _account!.name.isNotEmpty)
                             ? _account!.name[0].toUpperCase()
                             : '?',
                         style: TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w700,
-                          color: isDark
-                              ? const Color(0xFFE8E8E8)
-                              : const Color(0xFF111111),
+                          fontSize: 18, 
+                          fontWeight: FontWeight.w700,
+                          color: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
                         ),
                       ),
                     ),
