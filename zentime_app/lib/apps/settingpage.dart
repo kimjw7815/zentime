@@ -1,5 +1,5 @@
-import './shared_imports.dart';
 import '../services/api_service.dart';
+import './shared_imports.dart';
 
 class SettingPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -34,64 +34,176 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF),
+        elevation: 0,
+        title: Text('설정',
+            style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111),
+            )),
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Text('여기는 설정 창입니다', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 20),
-                  
-                  // 이제 일반 상태 변수(_account)에서 안전하게 데이터를 뿌립니다.
-                  Text('이름: ${_account?.name ?? '로그인 필요'}'),
-                  Text('등록된 이메일: ${_account?.email ?? '존재하지 않음'}'),
-                  const SizedBox(height: 20),
+          : ListView(
+              padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
+              children: [
+                // 프로필 카드
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFFE8E8E8)),
+                  ),
+                  child: Row(children: [
+                    CircleAvatar(
+                      radius: 24,
+                      backgroundColor:
+                          isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
+                      child: Text(
+                        (_account?.name ?? '?').isNotEmpty
+                            ? _account!.name[0].toUpperCase()
+                            : '?',
+                        style: TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? const Color(0xFFE8E8E8)
+                              : const Color(0xFF111111),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                        Text(_account?.name ?? '로그인 필요',
+                            style: TextStyle(
+                              fontSize: 15, fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFFE8E8E8)
+                                  : const Color(0xFF111111),
+                            )),
+                        const SizedBox(height: 2),
+                        Text(_account?.email ?? '',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: isDark
+                                  ? const Color(0xFF666666)
+                                  : const Color(0xFF999999),
+                            )),
+                      ]),
+                    ),
+                  ]),
+                ),
+                const SizedBox(height: 16),
 
-                  if (_account == null) ...[
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.login),
-                      label: const Text('구글 계정으로 로그인'),
-                      onPressed: () async {
-                        // 로그인 함수 내부에서 하이브 박스를 열고 닫는 작업이 완전히 끝난 뒤 돌아옵니다.
-                        bool success = await loginWithGoogleAndBackend();
-
-                        if (success) {
-                          // 💡 로그인이 성공했다면, 다시 박스를 열어서 새로 바뀐 프로필을 감지해옵니다.
+                // 메뉴 카드
+                Container(
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFFE8E8E8)),
+                  ),
+                  child: Column(children: [
+                    if (_account == null)
+                      _menuItem(
+                        icon: Icons.login_rounded,
+                        label: '구글 계정으로 로그인',
+                        isDark: isDark,
+                        onTap: () async {
+                          bool success = await loginWithGoogleAndBackend();
+                          if (success) {
+                            await _loadUserProfile();
+                          } else if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('로그인 실패!')));
+                          }
+                        },
+                      )
+                    else
+                      _menuItem(
+                        icon: Icons.logout_rounded,
+                        label: '로그아웃',
+                        isDark: isDark,
+                        labelColor: const Color(0xFFDC3C3C),
+                        iconColor: const Color(0xFFDC3C3C),
+                        onTap: () async {
+                          var userBox = await Hive.openBox<UserAccountData>(
+                              DatabaseService.userBoxName);
+                          await userBox.delete('profile');
+                          await userBox.close();
+                          var authBox = await Hive.openBox('authBox');
+                          await authBox.delete('jwt_token');
+                          await authBox.close();
                           await _loadUserProfile();
-                        } else if (mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('로그인 실패!')),
-                          );
-                        }
-                      },
+                        },
+                      ),
+                    Divider(height: 1, thickness: 0.5,
+                        color: isDark
+                            ? const Color(0xFF1E1E1E)
+                            : const Color(0xFFEEEEEE)),
+                    _menuItem(
+                      icon: Icons.brightness_6_outlined,
+                      label: '라이트 / 다크 모드 변경',
+                      isDark: isDark,
+                      onTap: widget.toggleTheme,
                     ),
-                  ] else ...[
-                    TextButton(
-                      onPressed: () async {
-                        // 로그아웃 시에도 열고 ➡️ 지우고 ➡️ 즉시 닫기
-                        var userBox = await Hive.openBox<UserAccountData>(DatabaseService.userBoxName);
-                        await userBox.delete('profile');
-                        await userBox.close(); // 닫기
-
-                        var authBox = await Hive.openBox('authBox');
-                        await authBox.delete('jwt_token');
-                        await authBox.close(); // 닫기
-
-                        // 상단 프로필 변수 비우고 UI 갱신
-                        await _loadUserProfile();
-                      },
-                      child: const Text('로그아웃하기', style: TextStyle(color: Colors.red)),
-                    ),
-                  ],
-                  TextButton(
-                    onPressed: widget.toggleTheme, 
-                    child: const Text('라이트모드/다크모드 변경하기'),
-                  )
-                ],
-              ),
+                  ]),
+                ),
+              ],
             ),
+    );
+  }
+
+  Widget _menuItem({
+    required IconData icon,
+    required String label,
+    required bool isDark,
+    Color? iconColor,
+    Color? labelColor,
+    required VoidCallback onTap,
+  }) {
+    final defaultIcon = isDark ? const Color(0xFF888888) : const Color(0xFF555555);
+    final defaultLabel = isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111);
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+        child: Row(children: [
+          Container(
+            width: 32, height: 32,
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: iconColor ?? defaultIcon),
+          ),
+          const SizedBox(width: 12),
+          Text(label,
+              style: TextStyle(
+                fontSize: 14, fontWeight: FontWeight.w500,
+                color: labelColor ?? defaultLabel,
+              )),
+          const Spacer(),
+          Icon(Icons.chevron_right_rounded,
+              size: 16,
+              color: isDark ? const Color(0xFF333333) : const Color(0xFFCCCCCC)),
+        ]),
+      ),
     );
   }
 }

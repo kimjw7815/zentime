@@ -2,12 +2,13 @@
 import 'dart:async';
 import 'dart:isolate';
 import 'dart:ui';
-import '../apps/shared_imports.dart';
 
 import 'package:flutter_accessibility_service/accessibility_event.dart';
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+
+import '../apps/shared_imports.dart';
 
 @pragma('vm:entry-point')
 void startCallback() {
@@ -45,11 +46,13 @@ class SecureDetectionHandler extends TaskHandler {
           
         if (_isBlocking) return;
         _isBlocking = true;
+
         
         await DatabaseService.lake(DateTime.now(), event.packageName!, LogType.enter, UsageType.etc);
         
         await FlutterOverlayWindow.showOverlay(
-          alignment: OverlayAlignment.center,
+          enableDrag: false,
+          alignment: OverlayAlignment.bottomCenter,
           height: WindowSize.matchParent,
           width: WindowSize.matchParent
         );

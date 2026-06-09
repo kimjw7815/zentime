@@ -74,33 +74,47 @@ class _DetailPageState extends State<DetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    // 💡 날짜(Key)들을 역순(최신순) 정렬
     final sortedKeys = _usageDataMap.keys.toList()..sort((a, b) => b.compareTo(a));
 
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
       appBar: AppBar(
-        title: const Text('사용 기록 상세'),
+        backgroundColor: isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF),
+        elevation: 0,
+        title: Text('사용 기록 상세',
+            style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111),
+            )),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: '새로고침',
-            // 로딩 중일 때는 버튼을 비활성화하여 중복 터치 방지
-            onPressed: _isLoading ? null : _loadDetailData, 
+            icon: Icon(Icons.refresh,
+                color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111)),
+            onPressed: _isLoading ? null : _loadDetailData,
           ),
         ],
       ),
-      // 💡 수동 데이터 동기화를 보완하기 위한 당겨서 새로고침 위젯 도입
       body: RefreshIndicator(
         onRefresh: _loadDetailData,
         child: sortedKeys.isEmpty
-            ? const Center(child: Text('기록이 없습니다.\n(아래로 당겨서 새로고침)', textAlign: TextAlign.center))
+            ? Center(
+                child: Text('기록이 없습니다.\n아래로 당겨서 새로고침',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFF444444)
+                            : const Color(0xFFBBBBBB))))
             : ListView.builder(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
                 itemCount: sortedKeys.length,
                 itemBuilder: (context, dateIndex) {
                   final dateKey = sortedKeys[dateIndex];
@@ -109,63 +123,92 @@ class _DetailPageState extends State<DetailPage> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // --- 날짜 헤더 ---
-                      Container(
-                        width: double.infinity,
-                        color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        child: Text(
-                          '📅 날짜: $dateKey',
-                          style: TextStyle(
-                            fontSize: 16, 
-                            fontWeight: FontWeight.bold,
-                            color: Theme.of(context).colorScheme.primary
-                          ),
-                        ),
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10, top: 4),
+                        child: Text('📅  날짜: $dateKey',
+                            style: TextStyle(
+                              fontSize: 13, fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF888888)
+                                  : const Color(0xFF999999),
+                            )),
                       ),
-
-                      // --- 해당 날짜의 앱 리스트 ---
                       if (appList.isEmpty)
-                        const Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: Text('해당 날짜에 기록된 정제 데이터가 없습니다.', style: TextStyle(color: Colors.grey)),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: Text('해당 날짜에 기록된 데이터가 없습니다.',
+                              style: TextStyle(
+                                  fontSize: 13,
+                                  color: isDark
+                                      ? const Color(0xFF444444)
+                                      : const Color(0xFFBBBBBB))),
                         ),
-
-                      ...appList.map((appData) {
-                        return Column(
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.apps, color: Colors.indigo),
-                              title: Text(
-                                appData.appName.split('.').last, // 패키지명 가독성 처리
-                                style: const TextStyle(fontWeight: FontWeight.bold),
-                              ),
+                      ...appList.map((appData) => Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF141414)
+                                  : const Color(0xFFFFFFFF),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(
+                                  color: isDark
+                                      ? const Color(0xFF1E1E1E)
+                                      : const Color(0xFFEBEBEB)),
                             ),
-
-                            // --- 앱 내부의 목적 타입별 사용량 ---
-                            ...appData.usageByType.entries.map((entry) {
-                              return Padding(
-                                padding: const EdgeInsets.only(left: 72, right: 24, bottom: 8),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      entry.key.displayName,
-                                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                            child: Column(children: [
+                              Padding(
+                                padding: const EdgeInsets.fromLTRB(14, 12, 14, 10),
+                                child: Row(children: [
+                                  Container(
+                                    width: 30, height: 30,
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? const Color(0xFF222222)
+                                          : const Color(0xFFF0F0F0),
+                                      borderRadius: BorderRadius.circular(7),
                                     ),
-                                    Text(
-                                      Util.formatDuration(entry.value),
-                                      style: const TextStyle(fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }),
-                            const SizedBox(height: 8),
-                          ],
-                        );
-                      }),
-                      const Divider(height: 1, thickness: 1),
+                                    child: Icon(Icons.apps_rounded,
+                                        size: 15,
+                                        color: isDark
+                                            ? const Color(0xFF888888)
+                                            : const Color(0xFF555555)),
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text(appData.appName.split('.').last,
+                                      style: TextStyle(
+                                        fontSize: 14, fontWeight: FontWeight.w600,
+                                        color: isDark
+                                            ? const Color(0xFFE8E8E8)
+                                            : const Color(0xFF111111),
+                                      )),
+                                ]),
+                              ),
+                              ...appData.usageByType.entries.map((entry) =>
+                                Padding(
+                                  padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(entry.key.displayName,
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: isDark
+                                                ? const Color(0xFF666666)
+                                                : const Color(0xFF999999),
+                                          )),
+                                      Text(Util.formatDuration(entry.value),
+                                          style: TextStyle(
+                                            fontSize: 13, fontWeight: FontWeight.w600,
+                                            color: isDark
+                                                ? const Color(0xFFE8E8E8)
+                                                : const Color(0xFF111111),
+                                          )),
+                                    ],
+                                  ),
+                                )),
+                            ]),
+                          )),
+                      const SizedBox(height: 6),
                     ],
                   );
                 },

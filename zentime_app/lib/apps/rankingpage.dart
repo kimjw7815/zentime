@@ -1,6 +1,7 @@
 // rankingpage.dart start
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
+
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 
@@ -114,14 +115,24 @@ class _RankingPageState extends State<RankingPage> {
     final int seconds = (totalSeconds as num).toInt();
     final int minutes = seconds ~/ 60;
     final int remainingSeconds = seconds % 60;
-    return '$minutes분 ${remainingSeconds}초';
+    return '$minutes분 $remainingSeconds초';
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('디톡스 랭킹')),
-      // 💡 Stack을 활용하여 데이터 동기화(`_isRefreshing`) 시 인디케이터 오버레이 처리
+      backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF),
+        elevation: 0,
+        title: Text('디톡스 랭킹',
+            style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w600,
+              color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111),
+            )),
+      ),
       body: Stack(
         children: [
           FutureBuilder<List<dynamic>>(
@@ -133,113 +144,198 @@ class _RankingPageState extends State<RankingPage> {
               if (snapshot.hasError) {
                 return Center(
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Text('에러 발생: ${snapshot.error}', textAlign: TextAlign.center),
+                    padding: const EdgeInsets.all(24),
+                    child: Text('에러 발생: ${snapshot.error}',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFF888888)
+                                : const Color(0xFF999999))),
                   ),
                 );
               }
               if (!snapshot.hasData || snapshot.data!.length < 2) {
-                return const Center(child: Text('랭킹 데이터를 불러올 수 없습니다.'));
+                return Center(
+                    child: Text('랭킹 데이터를 불러올 수 없습니다.',
+                        style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFF444444)
+                                : const Color(0xFFBBBBBB))));
               }
 
               final rankingData = snapshot.data![0] as List<dynamic>;
               final comparisonData = snapshot.data![1] as List<dynamic>;
 
-              return CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 8.0),
-                      child: TextButton(
-                        // 💡 로딩 중일 때는 클릭 동작을 무효화하여 중복 호출 방지
-                        onPressed: _isRefreshing ? null : handleSyncWithCooldown, 
-                        child: Center(
-                          child: Text(
-                            _isRefreshing ? '서버 동기화 중...' : '서버 데이터베이스 연결 (10분 제한)', 
-                            style: TextStyle(
-                              color: _isRefreshing ? Colors.grey : Colors.purple, 
-                              fontSize: 16, 
-                              fontWeight: FontWeight.bold
-                            )
+              return ListView(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                children: [
+                  // 서버 동기화 버튼
+                  GestureDetector(
+                    onTap: _isRefreshing ? null : handleSyncWithCooldown,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 13),
+                      margin: const EdgeInsets.only(bottom: 24),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                            color: isDark
+                                ? const Color(0xFF2A2A2A)
+                                : const Color(0xFFE0E0E0)),
+                      ),
+                      child: Center(
+                        child: Text(
+                          _isRefreshing ? '서버 동기화 중...' : '서버 데이터베이스 연결 (10분 제한)',
+                          style: TextStyle(
+                            fontSize: 13, fontWeight: FontWeight.w600,
+                            color: _isRefreshing
+                                ? (isDark ? const Color(0xFF444444) : const Color(0xFFBBBBBB))
+                                : (isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111)),
                           ),
                         ),
                       ),
                     ),
                   ),
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('🔥 친구와 비교', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  
-                  // 친구 비교 리스트 빈 상태 방어 코드
-                  comparisonData.isEmpty 
-                    ? const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text('비교할 친구 데이터가 없습니다.', style: TextStyle(color: Colors.grey)),
+
+                  // 친구와 비교
+                  Text('🔥 친구와 비교',
+                      style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700,
+                        color: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
+                      )),
+                  const SizedBox(height: 12),
+                  if (comparisonData.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text('비교할 친구 데이터가 없습니다.',
+                          style: TextStyle(
+                              color: isDark
+                                  ? const Color(0xFF444444)
+                                  : const Color(0xFFBBBBBB))),
+                    )
+                  else
+                    ...comparisonData.map((item) {
+                      if (item['isMe'] == true) return const SizedBox.shrink();
+                      final int diffSeconds =
+                          (item['diffWithMe'] as num? ?? 0).toInt();
+                      final bool isBetter = diffSeconds < 0;
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : const Color(0xFFEBEBEB)),
                         ),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final item = comparisonData[index];
-                          if (item['isMe'] == true) return const SizedBox.shrink();
-                          
-                          final int diffSeconds = (item['diffWithMe'] as num? ?? 0).toInt();
-                          final bool isBetter = diffSeconds < 0;
-                          
-                          return Card(
-                            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                            child: ListTile(
-                              title: Text('${item['userName'] ?? '알 수 없는 사용자'}님과의 대결'),
-                              subtitle: Text(isBetter 
-                                  ? '상대보다 ${_formatSecondsToMinutes(diffSeconds.abs())} 더 집중했어요!' 
-                                  : '상대보다 ${_formatSecondsToMinutes(diffSeconds.abs())} 더 썼네요.'),
-                              leading: Icon(
-                                isBetter ? Icons.trending_up : Icons.trending_down, 
-                                color: isBetter ? Colors.green : Colors.red
+                        child: Row(children: [
+                          Icon(
+                            isBetter ? Icons.trending_up : Icons.trending_down,
+                            color: isBetter
+                                ? const Color(0xFF32B464)
+                                : const Color(0xFFDC3C3C),
+                            size: 20,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                              Text('${item['userName'] ?? '알 수 없는 사용자'}님과의 대결',
+                                  style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? const Color(0xFFE8E8E8)
+                                        : const Color(0xFF111111),
+                                  )),
+                              const SizedBox(height: 2),
+                              Text(
+                                isBetter
+                                    ? '상대보다 ${_formatSecondsToMinutes(diffSeconds.abs())} 더 집중했어요!'
+                                    : '상대보다 ${_formatSecondsToMinutes(diffSeconds.abs())} 더 썼네요.',
+                                style: TextStyle(
+                                    fontSize: 12,
+                                    color: isDark
+                                        ? const Color(0xFF666666)
+                                        : const Color(0xFF999999)),
                               ),
-                            ),
-                          );
-                        }, childCount: comparisonData.length),
-                      ),
-                      
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('🏆 전체 랭킹', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-                  
-                  // 전체 랭킹 리스트 빈 상태 방어 코드
-                  rankingData.isEmpty
-                    ? const SliverToBoxAdapter(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 16.0),
-                          child: Text('등록된 랭킹 데이터가 없습니다.', style: TextStyle(color: Colors.grey)),
+                            ]),
+                          ),
+                        ]),
+                      );
+                    }),
+
+                  const SizedBox(height: 20),
+
+                  // 전체 랭킹
+                  Text('🏆 전체 랭킹',
+                      style: TextStyle(
+                        fontSize: 17, fontWeight: FontWeight.w700,
+                        color: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
+                      )),
+                  const SizedBox(height: 12),
+                  if (rankingData.isEmpty)
+                    Text('등록된 랭킹 데이터가 없습니다.',
+                        style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFF444444)
+                                : const Color(0xFFBBBBBB)))
+                  else
+                    ...rankingData.map((user) {
+                      final int rank = (user['rank'] as num? ?? 0).toInt();
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 13),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: isDark
+                                  ? const Color(0xFF1E1E1E)
+                                  : const Color(0xFFEBEBEB)),
                         ),
-                      )
-                    : SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final user = rankingData[index];
-                          final int rank = (user['rank'] as num? ?? 0).toInt();
-                          
-                          return ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: _getRankColor(rank), 
-                              child: Text('$rank', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                            ),
-                            title: Text(user['userName'] ?? '사용자'),
-                            subtitle: Text('낭비한 시간: ${_formatSecondsToMinutes(user['totalTime'])}'),
-                          );
-                        }, childCount: rankingData.length),
-                      ),
+                        child: Row(children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: _getRankColor(rank),
+                            child: Text('$rank',
+                                style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12)),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                              Text(user['userName'] ?? '사용자',
+                                  style: TextStyle(
+                                    fontSize: 13, fontWeight: FontWeight.w600,
+                                    color: isDark
+                                        ? const Color(0xFFE8E8E8)
+                                        : const Color(0xFF111111),
+                                  )),
+                              const SizedBox(height: 2),
+                              Text('낭비한 시간: ${_formatSecondsToMinutes(user['totalTime'])}',
+                                  style: TextStyle(
+                                      fontSize: 12,
+                                      color: isDark
+                                          ? const Color(0xFF666666)
+                                          : const Color(0xFF999999))),
+                            ]),
+                          ),
+                        ]),
+                      );
+                    }),
                 ],
               );
             },
           ),
-          // 💡 실시간 동기화 중일 때 화면을 어둡게 막고 로딩바를 보여주는 오버레이 레이어
           if (_isRefreshing)
             Container(
               color: Colors.black.withOpacity(0.2),

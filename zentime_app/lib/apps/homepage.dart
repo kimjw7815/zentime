@@ -1,11 +1,13 @@
 // homepage.dart start
-import './shared_imports.dart';
-import '../services/app_detection_service.dart';
-import '../services/util_service.dart';
-import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'dart:async';
+
 import 'package:flutter_accessibility_service/flutter_accessibility_service.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
+
+import '../services/app_detection_service.dart';
+import '../services/util_service.dart';
+import './shared_imports.dart';
 
 
 Future<bool> checkAndRequestPermissions() async {
@@ -99,95 +101,299 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     if (_isRefreshing) {
-      return const Center(child: CircularProgressIndicator());
+      return Scaffold(
+        backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
+        body: const Center(child: CircularProgressIndicator()),
+      );
     }
 
+    final wastedSecs = _wastedTime ?? 0;
+    final wastedMoney = Util.calculateWastedMoney(wastedSecs);
+    final mins = wastedSecs ~/ 60;
+    final secs = wastedSecs % 60;
+    final timeStr = mins > 0 ? '$mins분 $secs초' : '$secs초';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('ZenTime Dashboard')),
-      body: Center(
-        child: Column(
-          children: [
-            const SizedBox(height: 20),
-            Text('환영합니다, ${_account?.name ?? '사용자'}님!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            Text('오늘은 ${Util.formatDuration(_wastedTime ?? 0)}만큼 시간을 낭비하셨어요!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('${Util.calculateWastedMoney(_wastedTime ?? 0)}원 만큼 돈을 낭비하셨네요!', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            const SizedBox(height: 20),
-            const Text('zentime을 원하는대로 On/Off 하세요!'),
-            Switch(
-              value: isServiceRunning,
-              onChanged: (value) async {
-                if (value) {
-                  bool hasPermission = await checkAndRequestPermissions();
-                  if (hasPermission) {
-                    _detectionService.startAppDetection();
-                    setState(() { isServiceRunning = true; });
+      backgroundColor: isDark ? const Color(0xFF0A0A0A) : const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        backgroundColor: isDark ? const Color(0xFF111111) : const Color(0xFFFFFFFF),
+        elevation: 0,
+        title: Text('ZenTime',
+            style: TextStyle(
+              fontSize: 20, fontWeight: FontWeight.w600, letterSpacing: -0.3,
+              color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111),
+            )),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+        children: [
+          // ── 인사 + 통계 카드 ──
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8E8E8)),
+            ),
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('안녕하세요, ${_account?.name ?? '사용자'}님 👋',
+                  style: TextStyle(
+                    fontSize: 15, fontWeight: FontWeight.w600,
+                    color: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
+                  )),
+              const SizedBox(height: 12),
+              Row(children: [
+                _statChip('오늘 낭비', timeStr, isDark),
+                const SizedBox(width: 8),
+                _statChip('금전 낭비', '₩$wastedMoney', isDark),
+              ]),
+            ]),
+          ),
+          const SizedBox(height: 12),
+
+          // ── ZenTime 토글 ──
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                  color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0)),
+            ),
+            child: Row(children: [
+              Container(
+                width: 34, height: 34,
+                decoration: BoxDecoration(
+                  color: isDark ? const Color(0xFF222222) : const Color(0xFFF0F0F0),
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Icon(
+                  isServiceRunning ? Icons.self_improvement : Icons.bedtime_outlined,
+                  size: 18,
+                  color: isDark ? const Color(0xFF888888) : const Color(0xFF555555),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('ZenTime',
+                      style: TextStyle(
+                        fontSize: 14, fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
+                      )),
+                  Text(isServiceRunning ? '추적 중' : '일시 정지됨',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? const Color(0xFF777777) : const Color(0xFF888888),
+                      )),
+                ]),
+              ),
+              Switch(
+                value: isServiceRunning,
+                onChanged: (value) async {
+                  if (value) {
+                    bool hasPermission = await checkAndRequestPermissions();
+                    if (hasPermission) {
+                      _detectionService.startAppDetection();
+                      setState(() { isServiceRunning = true; });
+                    } else {
+                      setState(() { isServiceRunning = false; });
+                    }
                   } else {
-                    setState(() { isServiceRunning = false; }); 
+                    _detectionService.stopAppDetection();
+                    setState(() { isServiceRunning = false; });
                   }
-                } else {
-                  _detectionService.stopAppDetection();
-                  setState(() { isServiceRunning = false; });
-                }
-              },
-              activeColor: Colors.blue,
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() { _isRefreshing = true; });
-                    print("db 새로고침중");
-                    await _loadDataFromDatabase();
-                    print("db 새로고침 완료");
-                    setState(() { _isRefreshing = false; });
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로컬 로드 완료')));
-                  },
-                  child: const Text("db 새로고침")
-                ),
-                const SizedBox(width: 15),
-                ElevatedButton(
-                  onPressed: () async {
-                    setState(() { _isRefreshing = true; });
-                    print("db 정리하기");
-                    await DatabaseService.rawLogToUsageData();
-                    await _loadDataFromDatabase();
-                    print("db 정리 완료");
-                    setState(() { _isRefreshing = false; });
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('로그 정제 완료 완료')));
-                  },
-                  child: const Text("db 정리")
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            const Text('📋 적치된 최신 로그 내역 (테스트용)', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            // 💡 락 충돌 우려가 완전히 사라졌으므로 기존 주석을 풀어 안심하고 화면에 로그를 띄워줍니다.
-            Expanded(
-              child: _logs.isEmpty
-                  ? const Center(child: Text('적치된 로그가 없습니다.'))
-                  : ListView.builder(
-                      itemCount: _logs.length,
-                      itemBuilder: (context, index) {
-                        final log = _logs[index];
-                        return Card(
-                          margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-                          child: ListTile(
-                            leading: Icon(log.logType == LogType.enter ? Icons.login : Icons.logout, color: log.logType == LogType.enter ? Colors.green : Colors.red),
-                            title: Text(log.appName.split('.').last), // 가독성을 위해 패키지명 끝자리만 파싱
-                            subtitle: Text(log.dateTime.toString().substring(11, 19)), // 시간 정보만 크롭
-                            trailing: Text(log.usageType.displayName, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          ),
-                        );
-                      },
-                    ),
-            ),
+                },
+                activeColor: isDark ? const Color(0xFFE8E8E8) : const Color(0xFF111111),
+                activeTrackColor: isDark
+                    ? const Color(0xFF444444) : const Color(0xFFCCCCCC),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 22),
+
+          // ── DEV TOOLS ──
+          ...[
+            Text('DEV TOOLS',
+                style: TextStyle(
+                  fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2,
+                  color: isDark ? const Color(0xFF555555) : const Color(0xFFAAAAAA),
+                )),
+            const SizedBox(height: 8),
+            Row(children: [
+              _devButton('DB 새로고침', Icons.refresh, isDark, onTap: () async {
+                setState(() { _isRefreshing = true; });
+                await _loadDataFromDatabase();
+                setState(() { _isRefreshing = false; });
+                if (mounted) ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('로컬 로드 완료')));
+              }),
+              const SizedBox(width: 8),
+              _devButton('DB 정리', Icons.delete_sweep_outlined, isDark, onTap: () async {
+                setState(() { _isRefreshing = true; });
+                await DatabaseService.rawLogToUsageData();
+                await _loadDataFromDatabase();
+                setState(() { _isRefreshing = false; });
+                if (mounted) ScaffoldMessenger.of(context)
+                    .showSnackBar(const SnackBar(content: Text('로그 정제 완료')));
+              }),
+            ]),
+            const SizedBox(height: 22),
           ],
+
+          // ── 최신 로그 ──
+          Text('최신 로그',
+              style: TextStyle(
+                fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2,
+                color: isDark ? const Color(0xFF555555) : const Color(0xFFAAAAAA),
+              )),
+          const SizedBox(height: 10),
+          _logs.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('적치된 로그가 없습니다.',
+                        style: TextStyle(
+                            color: isDark
+                                ? const Color(0xFF444444)
+                                : const Color(0xFFBBBBBB))),
+                  ))
+              : ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _logs.length,
+                  itemBuilder: (context, index) {
+                    final log = _logs[index];
+                    final isEnter = log.logType == LogType.enter;
+                    final borderColor = isEnter
+                        ? const Color(0xFF32B464)
+                        : const Color(0xFFDC3C3C);
+                    final iconBg = isEnter
+                        ? const Color(0xFF32B464).withOpacity(0.12)
+                        : const Color(0xFFDC3C3C).withOpacity(0.12);
+
+                    final tagColors = {
+                      '놀이': isEnter ? const Color(0xFF32B464) : const Color(0xFFDC3C3C),
+                      '공부': const Color(0xFF32B464),
+                    };
+                    final tagColor = tagColors[log.usageType.displayName]
+                        ?? (isDark ? const Color(0xFF666666) : const Color(0xFF999999));
+
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF141414) : const Color(0xFFFFFFFF),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: borderColor.withOpacity(0.5), width: 1),
+                      ),
+                      child: Row(children: [
+                        Container(
+                          width: 30, height: 30,
+                          decoration: BoxDecoration(
+                            color: iconBg,
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                          child: Icon(
+                            isEnter ? Icons.login_rounded : Icons.logout_rounded,
+                            size: 14,
+                            color: borderColor,
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                            Text(log.appName.split('.').last,
+                                style: TextStyle(
+                                  fontSize: 13, fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFFE8E8E8)
+                                      : const Color(0xFF111111),
+                                )),
+                            Text(log.dateTime.toString().substring(11, 19),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isDark
+                                      ? const Color(0xFF444444)
+                                      : const Color(0xFFBBBBBB),
+                                )),
+                          ]),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 9, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: tagColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(log.usageType.displayName,
+                              style: TextStyle(
+                                  fontSize: 11, fontWeight: FontWeight.w600,
+                                  color: tagColor)),
+                        ),
+                      ]),
+                    );
+                  },
+                ),
+        ],
+      ),
+    );
+  }
+
+  Widget _statChip(String label, String value, bool isDark) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F0),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label,
+              style: TextStyle(
+                fontSize: 11,
+                color: isDark ? const Color(0xFF666666) : const Color(0xFF999999),
+              )),
+          const SizedBox(height: 3),
+          Text(value,
+              style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: isDark ? const Color(0xFFF5F5F5) : const Color(0xFF111111),
+              )),
+        ]),
+      ),
+    );
+  }
+
+  Widget _devButton(String label, IconData icon, bool isDark,
+      {required VoidCallback onTap}) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFF0F0F0),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+                color: isDark ? const Color(0xFF2A2A2A) : const Color(0xFFE0E0E0)),
+          ),
+          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(icon, size: 14,
+                color: isDark ? const Color(0xFF555555) : const Color(0xFFAAAAAA)),
+            const SizedBox(width: 6),
+            Text(label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: isDark ? const Color(0xFF888888) : const Color(0xFF777777),
+                )),
+          ]),
         ),
       ),
     );
